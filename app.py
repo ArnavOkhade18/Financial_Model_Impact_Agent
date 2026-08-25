@@ -3,62 +3,142 @@ from parser import extract_pdf_text
 from excel_parser import extract_excel_data
 from llm import analyze_documents
 
-st.set_page_config(page_title="Financial Model Impact Analyzer")
+# ----------------------------
+# PAGE CONFIG
+# ----------------------------
+
+st.set_page_config(
+    page_title="Financial Model Impact Analyzer",
+    page_icon="📈",
+    layout="wide"
+)
+
+# ----------------------------
+# SIDEBAR
+# ----------------------------
+
+with st.sidebar:
+
+    st.title("📈 Financial Model Impact Analyzer")
+
+    st.markdown("---")
+
+    st.markdown("""
+### Built With
+
+- Gemini 2.5 Flash
+- Python
+- Streamlit
+- PyMuPDF
+- OpenPyXL
+
+---
+Created by
+
+**Arnav Okhade**
+""")
+
+# ----------------------------
+# HEADER
+# ----------------------------
 
 st.title("📈 Financial Model Impact Analyzer")
 
-transcript = st.file_uploader(
-    "Upload Earnings Call Transcript",
-    type=["pdf"]
+st.markdown("""
+AI-powered analysis of **earnings call transcripts**, **financial models**, and **analyst notes**.
+
+The AI identifies:
+
+- Forecast assumptions likely to change
+- Financial model cells impacted
+- Supporting evidence from transcripts
+- Confidence level
+- Derived downstream impacts
+
+---
+""")
+
+# ----------------------------
+# FILE UPLOADS
+# ----------------------------
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    transcript = st.file_uploader(
+        "📄 Earnings Call Transcript",
+        type=["pdf"]
+    )
+
+with col2:
+
+    excel = st.file_uploader(
+        "📊 Financial Model",
+        type=["xlsx", "xlsm"]
+    )
+
+with col3:
+
+    notes = st.file_uploader(
+        "📝 Analyst Notes (Optional)",
+        type=["pdf"]
+    )
+
+st.markdown("")
+
+# ----------------------------
+# ANALYZE BUTTON
+# ----------------------------
+
+analyze = st.button(
+    "🚀 Analyze Financial Model",
+    use_container_width=True
 )
 
-notes = st.file_uploader(
-    "Upload Analyst / Hedge Fund Notes (Optional)",
-    type=["pdf"]
-)
+# ----------------------------
+# ANALYSIS
+# ----------------------------
 
-excel = st.file_uploader(
-    "Upload Financial Model",
-    type=["xlsx", "xlsm"]
-)
+if analyze:
 
+    if transcript and excel:
 
-if st.button("Analyze"):
+        progress = st.progress(0)
 
-    if transcript and notes and excel:
+        progress.progress(15, text="Reading Earnings Call...")
 
-        with st.spinner("Reading documents..."):
+        transcript_text = extract_pdf_text(transcript)
 
-            transcript_text = extract_pdf_text(transcript)
+        progress.progress(35, text="Reading Financial Model...")
+
+        excel_text = extract_excel_data(excel)
+
+        progress.progress(50, text="Reading Analyst Notes...")
+
+        notes_text = ""
+
+        if notes:
             notes_text = extract_pdf_text(notes)
-            excel_text = extract_excel_data(excel)
 
-            st.write("===== DEBUG =====")
+        progress.progress(70, text="Analyzing with Gemini...")
 
-            st.write("Transcript Type:", type(transcript_text))
-            st.write("Transcript First Item:")
-            st.write(transcript_text[0])
+        result = analyze_documents(
+            transcript_text,
+            notes_text,
+            excel_text
+        )
 
-            st.write("Notes Type:", type(notes_text))
-            st.write("Notes First Item:")
-            st.write(notes_text[0])
+        progress.progress(100, text="Analysis Complete!")
 
-            st.write("Excel Type:", type(excel_text))
-            st.write("Excel First Item:")
-            st.write(excel_text[0])
+        st.success("✅ Analysis Complete")
 
-        with st.spinner("Analyzing with Gemini..."):
+        st.markdown("---")
 
-            result = analyze_documents(
-                transcript_text,
-                notes_text,
-                excel_text
-            )
+        st.subheader("📊 AI Analysis")
 
-        st.success("Analysis Complete!")
-
-        st.write(result)
+        st.markdown(result)
 
     else:
 
-        st.error("Please upload all three files.")
+        st.error("Please upload the Earnings Call Transcript and Financial Model.")
